@@ -14,7 +14,7 @@ ingress:
     - host: profit-trailer.lucascga.com
       paths: []
   tls: []
-    - secretName: ´profit-trailer-tls
+    - secretName: tls-pt-binance-ingress
       hosts:
         - profit-trailer.lucascga.com
 

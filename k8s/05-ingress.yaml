@@ -10,7 +10,7 @@ spec:
   - host: pt-binance-01.lucascga.com
   tls:
   - hosts:
-    - pt-binance.lucascga.com
+    - pt-binance-01.lucascga.com
     secretName: tls-pt-binance-ingress
 status:
   loadBalancer:

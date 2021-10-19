@@ -4,10 +4,10 @@ entries:
   - annotations:
       category: CryptoBot
     apiVersion: v2
-    appVersion: 2.5.1
-    created: "2021-09-23T21:14:21.7070451-03:00"
+    appVersion: 2.5.2
+    created: "2021-10-19T18:50:48.6915577-03:00"
     description: A Profit Trailer deploy using a Stateful deploy
-    digest: b7b1f085a08d83bf4baa11a973184e021c3bbf1d257b045bd6868c6b0942db8b
+    digest: 2bf18532f64ca4cb4128d53ab09bd0ee1752cf155bad0d9cc59e72147a40767e
     home: https://github.com/connde/profit-trailer/
     maintainers:
     - email: lucas@gmail.com
@@ -15,6 +15,6 @@ entries:
     name: profit-trailer
     type: application
     urls:
-    - https://github.com/connde/profit-trailer/releases/download/profit-trailer-1.1.0/profit-trailer-1.1.0.tgz
-    version: 1.1.0
-generated: "2021-09-23T21:14:21.7070451-03:00"
+    - https://github.com/connde/profit-trailer/releases/download/profit-trailer-1.2.0/profit-trailer-1.2.0.tgz
+    version: 1.2.0
+generated: "2021-10-19T18:50:48.6925555-03:00"

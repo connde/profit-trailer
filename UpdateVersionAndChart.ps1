@@ -42,7 +42,15 @@ function Invoke-GitCommand {
     )
     
     Write-Host "Executing: git $Command" -ForegroundColor Cyan
-    $output = git $Command.Split(' ')
+    
+    if ($Command.StartsWith('commit -m')) {
+        # Special handling for commit commands to preserve the message as a single argument
+        $parts = $Command -split ' ', 3  # Split into ['commit', '-m', 'message']
+        $output = git commit -m $parts[2]
+    } else {
+        $output = git $Command.Split(' ')
+    }
+    
     if ($LASTEXITCODE -ne 0) {
         throw "$ErrorMessage. Git command failed: git $Command"
     }
@@ -50,38 +58,34 @@ function Invoke-GitCommand {
 }
 
 try {
-    # Start from develop branch and ensure it's up to date
+    # Start from develop branch
     Invoke-GitCommand "checkout develop" "Failed to checkout develop branch"
-    Invoke-GitCommand "pull origin develop" "Failed to pull latest changes from develop"
-
-    # Setup feature branch
+    
+    # Setup feature branch name
     $featureBranch = "feature/$Version"
     
-    # Check if branch exists locally
+    # Check if branch exists and delete it
     $localBranchExists = Invoke-GitCommand "branch --list $featureBranch" "Failed to list branches"
+    if ($localBranchExists) {
+        Write-Host "Deleting existing feature branch..." -ForegroundColor Yellow
+        Invoke-GitCommand "branch -D $featureBranch" "Failed to delete feature branch"
+    }
     
-    # Check if branch exists on remote
-    $remoteBranchExists = $false
+    # Delete remote branch if it exists
     try {
         $remoteBranch = git ls-remote --heads origin $featureBranch
-        $remoteBranchExists = ![string]::IsNullOrEmpty($remoteBranch)
+        if (![string]::IsNullOrEmpty($remoteBranch)) {
+            Write-Host "Deleting remote feature branch..." -ForegroundColor Yellow
+            Invoke-GitCommand "push origin --delete $featureBranch" "Failed to delete remote feature branch"
+        }
     } catch {
-        Write-Host "Could not check remote branch, assuming it doesn't exist" -ForegroundColor Yellow
+        Write-Host "Could not check remote branch, continuing..." -ForegroundColor Yellow
     }
     
-    if ($localBranchExists) {
-        Write-Host "Feature branch exists locally, checking it out..." -ForegroundColor Yellow
-        Invoke-GitCommand "checkout $featureBranch" "Failed to checkout feature branch"
-        
-        if ($remoteBranchExists) {
-            Write-Host "Pulling latest changes from remote..." -ForegroundColor Cyan
-            Invoke-GitCommand "pull origin $featureBranch" "Failed to pull latest changes from feature branch"
-        }
-    } else {
-        Write-Host "Creating new feature branch..." -ForegroundColor Cyan
-        Invoke-GitCommand "checkout -b $featureBranch" "Failed to create feature branch"
-    }
-
+    # Create new branch from develop
+    Write-Host "Creating new feature branch..." -ForegroundColor Cyan
+    Invoke-GitCommand "checkout -b $featureBranch" "Failed to create feature branch"
+    
     # Update version in files
     $files = @(
         "charts/profit-trailer/values.yaml",

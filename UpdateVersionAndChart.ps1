@@ -135,7 +135,7 @@ try {
 
     # Commit version changes first
     Invoke-GitCommand "add ." "Failed to stage changes"
-    Invoke-GitCommand "commit -m 'feat: Update to version $Version'" "Failed to commit changes"
+    Invoke-GitCommand "commit -m ""feat: Update to version $Version""" "Failed to commit changes"
     Invoke-GitCommand "push origin $featureBranch" "Failed to push changes to feature branch"
 
     # Package and publish Helm chart
@@ -167,7 +167,7 @@ try {
     # Commit and push changes to gh-pages
     Write-Host "Publishing changes..." -ForegroundColor Cyan
     Invoke-GitCommand "add .\index.yaml" "Failed to stage index.yaml"
-    Invoke-GitCommand "commit -m 'release $Version'" "Failed to commit index.yaml"
+    Invoke-GitCommand "commit -m ""release $Version""" "Failed to commit index.yaml"
     Invoke-GitCommand "push origin gh-pages" "Failed to push changes to gh-pages"
 
     # Return to feature branch

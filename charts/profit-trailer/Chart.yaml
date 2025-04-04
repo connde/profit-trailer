@@ -1,28 +1,56 @@
 annotations:
+annotations:
+  category: CryptoBot
   category: CryptoBot
 apiVersion: v2
+apiVersion: v2
+
 
 name: profit-trailer
+name: profit-trailer
+description: A Profit Trailer deploy using a Stateful deploy
 description: A Profit Trailer deploy using a Stateful deploy
 home: https://github.com/connde/profit-trailer/
+home: https://github.com/connde/profit-trailer/
+# A chart can be either an 'application' or a 'library' chart.
 # A chart can be either an 'application' or a 'library' chart.
 #
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
 # Application charts are a collection of templates that can be packaged into versioned archives
 # to be deployed.
+# to be deployed.
+#
 #
 # Library charts provide useful utilities or functions for the chart developer. They're included as
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
 # a dependency of application charts to inject those utilities and functions into the rendering
 # pipeline. Library charts do not define any templates and therefore cannot be deployed.
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
 type: application
 
+
+# This is the chart version. This version number should be incremented each time you make changes
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
+# to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 1.49.1
 version: 1.49.0
 # This is the version number of the application being deployed. This version number should be
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
-appVersion: 2.5.68
+# follow Semantic Versioning. They should reflect the version the application is using.
+appVersion: 1.49.1
+appVersion: 2.5.69
+maintainers:
 maintainers:
   - email: lucas@gmail.com 
+  - email: lucas@gmail.com 
+    name: Lucas
     name: Lucas

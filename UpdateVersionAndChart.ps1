@@ -35,14 +35,38 @@ function Update-ChartYaml {
     Set-Content -Path $chartFile -Value $updatedContent
 }
 
+function Invoke-GitCommand {
+    param(
+        [string]$Command,
+        [string]$ErrorMessage
+    )
+    
+    Write-Host "Executing: git $Command" -ForegroundColor Cyan
+    $output = git $Command.Split(' ')
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ErrorMessage. Git command failed: git $Command"
+    }
+    return $output
+}
+
 try {
     # Start from develop branch and ensure it's up to date
-    git checkout develop
-    git pull origin develop
+    Invoke-GitCommand "checkout develop" "Failed to checkout develop branch"
+    Invoke-GitCommand "pull origin develop" "Failed to pull latest changes from develop"
 
-    # Create and checkout new feature branch
+    # Setup feature branch
     $featureBranch = "feature/$Version"
-    git checkout -b $featureBranch
+    
+    # Check if branch exists
+    $branchExists = Invoke-GitCommand "branch --list $featureBranch" "Failed to list branches"
+    if ($branchExists) {
+        Write-Host "Feature branch already exists, checking it out..." -ForegroundColor Yellow
+        Invoke-GitCommand "checkout $featureBranch" "Failed to checkout feature branch"
+        Invoke-GitCommand "pull origin $featureBranch" "Failed to pull latest changes from feature branch"
+    } else {
+        Write-Host "Creating new feature branch..." -ForegroundColor Cyan
+        Invoke-GitCommand "checkout -b $featureBranch" "Failed to create feature branch"
+    }
 
     # Update version in files
     $files = @(
@@ -52,9 +76,35 @@ try {
     )
 
     foreach ($file in $files) {
-        (Get-Content $file) | ForEach-Object {
-            $_ -replace '(?<=version: )\d+\.\d+\.\d+', $Version
-        } | Set-Content $file
+        $content = Get-Content $file
+        
+        switch -Wildcard ($file) {
+            "*/values.yaml" {
+                $content = $content | ForEach-Object {
+                    if ($_ -match 'image: lucasconde/profit-trailer:') {
+                        $_ -replace ':\d+\.\d+\.\d+', ":$Version"
+                    } else {
+                        $_
+                    }
+                }
+            }
+            "Dockerfile" {
+                $content = $content | ForEach-Object {
+                    if ($_ -match 'ENV PT_VERSION=') {
+                        $_ -replace '=\d+\.\d+\.\d+', "=$Version"
+                    } else {
+                        $_
+                    }
+                }
+            }
+            default {
+                $content = $content | ForEach-Object {
+                    $_ -replace '(?<=version: )\d+\.\d+\.\d+', $Version
+                }
+            }
+        }
+        
+        Set-Content -Path $file -Value $content
     }
 
     # Get current chart version and increment minor version
@@ -69,7 +119,12 @@ try {
     # Update Chart.yaml with new versions
     Update-ChartYaml -AppVersion $Version -ChartVersion $newChartVersion
 
-    # Package and publish Helm chart first
+    # Commit version changes first
+    Invoke-GitCommand "add ." "Failed to stage changes"
+    Invoke-GitCommand "commit -m 'feat: Update to version $Version'" "Failed to commit changes"
+    Invoke-GitCommand "push origin $featureBranch" "Failed to push changes to feature branch"
+
+    # Package and publish Helm chart
     Write-Host "Packaging Helm chart..." -ForegroundColor Cyan
     
     # Clean up deploy directory
@@ -90,26 +145,19 @@ try {
 
     # Switch to gh-pages branch and update index
     Write-Host "Updating chart repository index..." -ForegroundColor Cyan
-    git checkout gh-pages
-    if ($LASTEXITCODE -ne 0) { throw "Failed to checkout gh-pages branch" }
+    Invoke-GitCommand "checkout gh-pages" "Failed to checkout gh-pages branch"
 
     cr index -i .\index.yaml -p .deploy -o connde -r profit-trailer -c https://github.com/connde/profit-trailer/charts
     if ($LASTEXITCODE -ne 0) { throw "Failed to update chart index" }
 
     # Commit and push changes to gh-pages
     Write-Host "Publishing changes..." -ForegroundColor Cyan
-    git add .\index.yaml
-    git commit -m "release $Version"
-    git push origin gh-pages
-    if ($LASTEXITCODE -ne 0) { throw "Failed to push changes to gh-pages" }
+    Invoke-GitCommand "add .\index.yaml" "Failed to stage index.yaml"
+    Invoke-GitCommand "commit -m 'release $Version'" "Failed to commit index.yaml"
+    Invoke-GitCommand "push origin gh-pages" "Failed to push changes to gh-pages"
 
     # Return to feature branch
-    git checkout $featureBranch
-
-    # Now commit and push version changes
-    git add .
-    git commit -m "feat: Update to version $Version"
-    git push origin $featureBranch
+    Invoke-GitCommand "checkout $featureBranch" "Failed to return to feature branch"
 
     # Create and merge PR to develop
     gh pr create --base develop --head $featureBranch --title "feat: Update to version $Version" --body "Update to version $Version"
@@ -117,8 +165,8 @@ try {
     gh pr merge $prNumber --merge
 
     # Switch to develop and update
-    git checkout develop
-    git pull origin develop
+    Invoke-GitCommand "checkout develop" "Failed to checkout develop branch"
+    Invoke-GitCommand "pull origin develop" "Failed to pull latest changes from develop"
 
     # Create and merge PR to main
     gh pr create --base main --head develop --title "feat: Update to version $Version" --body "Update to version $Version"
@@ -126,8 +174,8 @@ try {
     gh pr merge $prNumber --merge
 
     # Switch to main and update
-    git checkout main
-    git pull origin main
+    Invoke-GitCommand "checkout main" "Failed to checkout main branch"
+    Invoke-GitCommand "pull origin main" "Failed to pull latest changes from main"
 
     # Create GitHub release
     Write-Host "Creating GitHub release..." -ForegroundColor Cyan

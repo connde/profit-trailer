@@ -57,12 +57,26 @@ try {
     # Setup feature branch
     $featureBranch = "feature/$Version"
     
-    # Check if branch exists
-    $branchExists = Invoke-GitCommand "branch --list $featureBranch" "Failed to list branches"
-    if ($branchExists) {
-        Write-Host "Feature branch already exists, checking it out..." -ForegroundColor Yellow
+    # Check if branch exists locally
+    $localBranchExists = Invoke-GitCommand "branch --list $featureBranch" "Failed to list branches"
+    
+    # Check if branch exists on remote
+    $remoteBranchExists = $false
+    try {
+        $remoteBranch = git ls-remote --heads origin $featureBranch
+        $remoteBranchExists = ![string]::IsNullOrEmpty($remoteBranch)
+    } catch {
+        Write-Host "Could not check remote branch, assuming it doesn't exist" -ForegroundColor Yellow
+    }
+    
+    if ($localBranchExists) {
+        Write-Host "Feature branch exists locally, checking it out..." -ForegroundColor Yellow
         Invoke-GitCommand "checkout $featureBranch" "Failed to checkout feature branch"
-        Invoke-GitCommand "pull origin $featureBranch" "Failed to pull latest changes from feature branch"
+        
+        if ($remoteBranchExists) {
+            Write-Host "Pulling latest changes from remote..." -ForegroundColor Cyan
+            Invoke-GitCommand "pull origin $featureBranch" "Failed to pull latest changes from feature branch"
+        }
     } else {
         Write-Host "Creating new feature branch..." -ForegroundColor Cyan
         Invoke-GitCommand "checkout -b $featureBranch" "Failed to create feature branch"
